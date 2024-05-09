@@ -1,5 +1,5 @@
 build:
-	cargo build --release
+	cargo build --release --verbose
 
 run: build
 	./target/release/memvecdb
