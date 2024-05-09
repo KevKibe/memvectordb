@@ -1,4 +1,4 @@
-# MemVecDB
+# MemVectorDB
 An fast in-memory VectorDB in rust.
 
 ## Usage
