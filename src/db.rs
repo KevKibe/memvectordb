@@ -215,3 +215,239 @@ impl CacheDB {
         self.collections.get(collection_name)
     }
 }
+
+
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_create_collection_success_eucledean() {
+        let mut db = CacheDB::new();
+        let result = db.create_collection("test_collection".to_string(), 100, Distance::Euclidean);
+
+        assert!(result.is_ok());
+        let collection = result.unwrap();
+        assert_eq!(collection.dimension, 100);
+        assert_eq!(collection.distance, Distance::Euclidean);
+        assert!(db.collections.contains_key("test_collection"));
+    }
+
+    #[test]
+    fn test_create_collection_success_cosine() {
+        let mut db = CacheDB::new();
+        let result = db.create_collection("test_collection".to_string(), 100, Distance::Cosine);
+
+        assert!(result.is_ok());
+        let collection = result.unwrap();
+        assert_eq!(collection.dimension, 100);
+        assert_eq!(collection.distance, Distance::Cosine);
+        assert!(db.collections.contains_key("test_collection"));
+    }
+
+    #[test]
+    fn test_create_collection_success_dot_product() {
+        let mut db = CacheDB::new();
+        let result = db.create_collection("test_collection".to_string(), 100, Distance::DotProduct);
+
+        assert!(result.is_ok());
+        let collection = result.unwrap();
+        assert_eq!(collection.dimension, 100);
+        assert_eq!(collection.distance, Distance::DotProduct);
+        assert!(db.collections.contains_key("test_collection"));
+    }
+
+
+    #[test]
+    fn test_create_collection_already_exists() {
+        let mut db = CacheDB::new();
+        db.create_collection("test_collection".to_string(), 100, Distance::Euclidean).unwrap();
+
+        let result = db.create_collection("test_collection".to_string(), 200, Distance::Cosine);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_insert_into_collection_success() {
+        let mut db = CacheDB::new();
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: Vec::new(),
+        };
+        db.collections.insert("test_collection".to_string(), collection);
+        let mut metadata = HashMap::new();
+        metadata.insert("page".to_string(), "1".to_string());
+        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+
+        let embedding = Embedding {
+            id: "1".to_string(),
+            vector: vec![1.0, 2.0, 3.0],
+            metadata: Some(metadata)
+        };
+
+        let result = db.insert_into_collection("test_collection", embedding.clone());
+        assert!(result.is_ok());
+
+        // Check if the embedding is inserted into the collection
+        let collection = db.collections.get("test_collection").unwrap();
+        assert_eq!(collection.embeddings.len(), 1);
+        assert_eq!(collection.embeddings[0], embedding);
+    }
+
+
+    #[test]
+    fn test_update_collection_success() {
+        let mut db = CacheDB::new();
+        let mut metadata = HashMap::new();
+        metadata.insert("page".to_string(), "1".to_string());
+        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: vec![Embedding {
+                id: "1".to_string(),
+                vector: vec![1.0, 2.0, 3.0],
+                metadata: Some(metadata.clone())
+            }],
+        };
+        db.collections.insert("test_collection".to_string(), collection);
+
+        let new_embeddings = vec![
+            Embedding {
+                id: "2".to_string(),
+                vector: vec![4.0, 5.0, 6.0],
+                metadata: Some(metadata.clone()),
+            },
+            Embedding {
+                id: "3".to_string(),
+                vector: vec![7.0, 8.0, 9.0],
+                metadata: Some(metadata.clone()),
+            },
+        ];
+
+        let result = db.update_collection("test_collection", new_embeddings.clone());
+        assert!(result.is_ok());
+
+        // Check if the new embeddings are added to the collection
+        let collection = db.collections.get("test_collection").unwrap();
+        assert_eq!(collection.embeddings.len(), 3);
+        assert_eq!(collection.embeddings[1..], new_embeddings[..]);
+    }
+
+    #[test]
+    fn test_update_collection_duplicate_embedding() {
+        let mut db = CacheDB::new();
+        let mut metadata = HashMap::new();
+        metadata.insert("page".to_string(), "1".to_string());
+        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: vec![Embedding {
+                id: "1".to_string(),
+                vector: vec![1.0, 2.0, 3.0],
+                metadata: Some(metadata.clone())
+            }],
+        };
+        db.collections.insert("test_collection".to_string(), collection);
+
+        let new_embeddings = vec![
+            Embedding {
+                id: "1".to_string(), // Duplicate ID
+                vector: vec![4.0, 5.0, 6.0],
+                metadata: Some(metadata.clone())
+            },
+            Embedding {
+                id: "2".to_string(),
+                vector: vec![7.0, 8.0, 9.0],
+                metadata: Some(metadata.clone())
+            },
+        ];
+
+        let result = db.update_collection("test_collection", new_embeddings);
+        assert!(result.is_err());
+        assert_eq!(result.err(), Some(Error::UniqueViolation));
+    }
+
+    #[test]
+    fn test_update_collection_dimension_mismatch() {
+        let mut db = CacheDB::new();
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: Vec::new(),
+        };
+        db.collections.insert("test_collection".to_string(), collection);
+        let mut metadata = HashMap::new();
+        metadata.insert("page".to_string(), "1".to_string());
+        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        let new_embeddings = vec![
+            Embedding {
+                id: "1".to_string(),
+                vector: vec![1.0, 2.0], 
+                metadata: Some(metadata)// Dimension mismatch
+            },
+        ];
+
+        let result = db.update_collection("test_collection", new_embeddings);
+        assert!(result.is_err());
+        assert_eq!(result.err(), Some(Error::DimensionMismatch));
+    }
+
+    #[test]
+    fn test_delete_collection_success() {
+        let mut db = CacheDB::new();
+        db.collections.insert("test_collection".to_string(), Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: Vec::new(),
+        });
+
+        let result = db.delete_collection("test_collection");
+        assert!(result.is_ok());
+
+        // Check if the collection is removed from the database
+        assert!(!db.collections.contains_key("test_collection"));
+    }
+
+    #[test]
+    fn test_delete_collection_not_found() {
+        let mut db = CacheDB::new();
+
+        let result = db.delete_collection("non_existent_collection");
+        assert!(result.is_err());
+        assert_eq!(result.err(), Some(Error::NotFound));
+    }
+
+    #[test]
+    fn test_get_collection_success() {
+        let mut db = CacheDB::new();
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: Vec::new(),
+        };
+        db.collections.insert("test_collection".to_string(), collection.clone());
+
+        let result = db.get_collection("test_collection");
+        assert!(result.is_some());
+
+        // Check if the retrieved collection is the same as the original one
+        assert_eq!(result.unwrap(), &collection);
+    }
+
+    #[test]
+    fn test_get_collection_not_found() {
+        let db = CacheDB::new();
+
+        let result = db.get_collection("non_existent_collection");
+        assert!(result.is_none());
+    }
+
+}
