@@ -13,14 +13,14 @@ pub struct SimilarityResult {
 	pub embedding: Embedding,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema, PartialEq)]
 pub struct Collection {
 	pub dimension: usize,
 	pub distance: Distance,
 	#[serde(default)]
 	pub embeddings: Vec<Embedding>,
 }
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema, PartialEq)]
 pub struct Embedding {
 	pub id: String,
 	pub vector: Vec<f32>,
@@ -39,7 +39,7 @@ pub enum Distance {
 
 
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq)]
 pub enum Error {
 	#[error("Collection already exists")]
 	UniqueViolation,
