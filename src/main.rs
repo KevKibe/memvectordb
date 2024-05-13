@@ -11,7 +11,8 @@ use handlers::{
     get_collection_handler, 
     delete_collection_handler, 
     update_collection_handler, 
-    get_similarity_handler
+    get_similarity_handler,
+    get_embeddings_handler
 };
 use warp::{Filter,Rejection};
 use crate::model::{
@@ -74,6 +75,12 @@ async fn main() {
         .and(warp::body::json::<GetSimilarityStruct>())
         .and(with_db.clone())
         .and_then(get_similarity_handler);
+
+    let get_embeddings_route = warp::path!("get_embeddings")
+        .and(warp::post())
+        .and(warp::body::json::<CollectionHandlerStruct>())
+        .and(with_db.clone())
+        .and_then(get_embeddings_handler);
     // Combine the routes
     let routes = health_checker_route
         .or(create_collection_route)
@@ -81,7 +88,8 @@ async fn main() {
         .or(get_collection_route)
         .or(delete_collection_route)
         .or(update_collection_route)
-        .or(get_similarity_route);
+        .or(get_similarity_route)
+        .or(get_embeddings_route);
 
     // Start the server
     println!("🚀 Server started successfully");
