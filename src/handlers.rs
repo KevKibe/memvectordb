@@ -123,7 +123,6 @@ pub async fn update_collection_handler(
 }
 
 
-
 pub async fn get_similarity_handler(
     body: GetSimilarityStruct,
     db: Arc<Mutex<CacheDB>>,
@@ -138,6 +137,25 @@ pub async fn get_similarity_handler(
     Ok(json(&"Collection not found"))
 }
 
+pub async fn get_embeddings_handler(
+    body: CollectionHandlerStruct,
+    db: Arc<Mutex<CacheDB>>, 
+) -> Result<impl Reply, Rejection> {
+    let db_lock = db.lock().map_err(|_| warp::reject::reject())?;
+
+    let embeddings = db_lock.get_embeddings(&body.collection_name);
+
+    match embeddings {
+        Some(embeddings) => {
+            Ok(with_status(json(&embeddings), StatusCode::OK))
+        }
+        None => {
+            let error_message = format!("Collection '{}' not found", body.collection_name);
+            Ok(with_status(json(&error_message), StatusCode::NOT_FOUND))
+        }
+    }
+}
+
 
 
 
@@ -149,7 +167,7 @@ mod tests {
     use warp::http::StatusCode;
     use warp::Buf;
     use serde_json::{Value, json};
-    use crate::model::{Distance, Embedding, SimilarityResult};
+    use crate::model::{Distance, Embedding, SimilarityResult, CacheDB};
     use std::collections::HashMap;
 
     #[tokio::test]
@@ -218,7 +236,7 @@ mod tests {
             collection_name: "test_collection".to_string(),
             embedding: Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None },
         };
-        let reply = insert_embeddings_handler(request_body.clone(), db).await.unwrap();
+        let reply = insert_embeddings_handler(request_body.clone(), db.clone()).await.unwrap();
         let response = reply.into_response();
     
         assert_eq!(response.status(), StatusCode::OK);
@@ -227,8 +245,21 @@ mod tests {
         let body_value: String = serde_json::from_reader(body.reader()).unwrap();
         let expected_response = format!("Embedding inserted into collection: {}", request_body.collection_name);
         assert_eq!(body_value, expected_response);
+        
+        let body = CollectionHandlerStruct {
+            collection_name: "test_collection".to_string(),
+        };
+        let reply = get_embeddings_handler(body.clone(), db.clone()).await.unwrap();
+        let response = reply.into_response();
+        let mut body = warp::hyper::body::aggregate(response.into_body()).await.unwrap();
+        let body_bytes = body.copy_to_bytes(body.remaining());
+        let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
+        let embeddings: Vec<Embedding> = serde_json::from_str(&body_str).unwrap();
     
-        //TODO: Verify that the embedding was actually inserted in the database: a get_embeddings method
+        assert_eq!(embeddings.len(), 1);
+        assert_eq!(embeddings[0], request_body.embedding);
+
+
     }
 
 
@@ -331,7 +362,18 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        //TODO: Verify that the collection was actually updated in the database: a get_embeddings method
+        let body = CollectionHandlerStruct {
+            collection_name: "test_collection".to_string(),
+        };
+        let reply = get_embeddings_handler(body.clone(), db.clone()).await.unwrap();
+        let response = reply.into_response();
+        let mut body = warp::hyper::body::aggregate(response.into_body()).await.unwrap();
+        let body_bytes = body.copy_to_bytes(body.remaining());
+        let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
+        let embeddings: Vec<Embedding> = serde_json::from_str(&body_str).unwrap();
+    
+        assert_eq!(embeddings.len(), 2);
+        assert_eq!(embeddings[0], new_embeddings[0]);
     }
 
     #[tokio::test]
@@ -417,6 +459,41 @@ mod tests {
         let body_value: Value = serde_json::from_reader(body.reader()).unwrap();
 
         assert_eq!(body_value, "Collection not found");
+    }
+
+    #[tokio::test]
+    async fn test_get_embeddings_handler_success() {
+        let db = Arc::new(Mutex::new(CacheDB::new()));
+        let collection_name = "test_collection".to_string();
+
+        let request_body = CreateCollectionStruct {
+            collection_name: collection_name.clone(),
+            dimension: 3,
+            distance: Distance::Euclidean,
+        };
+        let _ = create_collection_handler(request_body.clone(), db.clone()).await.unwrap();
+
+        let request_body = CollectionHandlerStruct {
+            collection_name: collection_name.clone(),
+        };
+        let reply = get_embeddings_handler(request_body, db.clone()).await.unwrap();
+        let response = reply.into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+
+    #[tokio::test]
+    async fn test_get_embeddings_handler_not_found() {
+        let db = Arc::new(Mutex::new(CacheDB::new()));
+        let collection_name = "non_existent_collection".to_string();
+        let request_body = CollectionHandlerStruct {
+            collection_name: collection_name.clone(),
+        };
+        let reply = get_embeddings_handler(request_body, db.clone()).await.unwrap();
+        let response = reply.into_response();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
 }
