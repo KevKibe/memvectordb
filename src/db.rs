@@ -214,6 +214,19 @@ impl CacheDB {
     pub fn get_collection(&self, collection_name: &str) -> Option<&Collection> {
         self.collections.get(collection_name)
     }
+
+    /// Retrieve embeddings from a collection in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `collection_name`: The name of the collection to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the embeddings if found.
+    pub fn get_embeddings(&self, collection_name: &str) -> Option<Vec<Embedding>> {
+        self.collections.get(collection_name).map(|collection| collection.embeddings.clone())
+    }    
 }
 
 
@@ -449,6 +462,36 @@ mod tests {
         let result = db.get_collection("non_existent_collection");
         assert!(result.is_none());
     }
+
+
+    #[test]
+    fn test_get_embedding_success() {
+        let mut db = CacheDB::new();
+
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: vec![
+                Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None },
+                Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
+                Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
+            ],
+        };
+        db.collections.insert("test_collection".to_string(), collection.clone());
+        let result = db.get_embeddings("test_collection");
+        assert!(result.is_some());
+        assert_eq!(result, Some(collection.embeddings));
+    }
+
+    #[test]
+    fn test_get_embeddings_not_found() {
+        let db = CacheDB::new();
+
+        let result = db.get_embeddings("non_existent_collection");
+        assert!(result.is_none());
+    }
+
+
 
     #[test]
     fn test_get_similarity() {
