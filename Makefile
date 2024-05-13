@@ -2,7 +2,7 @@ build:
 	cargo build --release --verbose
 
 run: build
-	./target/release/memvecdb
+	./target/release/memvectordb
 
 clean:
 	cargo clean
