@@ -138,3 +138,75 @@ pub async fn get_similarity_handler(
     Ok(json(&"Collection not found"))
 }
 
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use warp::http::StatusCode;
+    use warp::test::request;
+    use warp::reply::json;
+    use warp::Buf;
+    use serde_json::{Value, json};
+    use crate::model::{Distance, Embedding};
+    use std::{
+        collections::{BinaryHeap, HashMap},
+    };
+
+    #[tokio::test]
+    async fn test_health_checker_handler() {
+        // Call the health_checker_handler function
+        let reply = health_checker_handler().await.unwrap();
+        let response = reply.into_response();
+
+        // Assert the response status code
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Extract JSON from the response body
+        let body = warp::hyper::body::aggregate(response.into_body()).await.unwrap();
+        let body_value: Value = serde_json::from_reader(body.reader()).unwrap();
+
+        // Assert the response body
+        let expected_body = json!({
+            "status": "success",
+            "message": "Health Check Sucessful!🚀"
+        });
+        assert_eq!(body_value, expected_body);
+    }
+
+    #[tokio::test]
+    async fn test_create_collection_handler_success() {
+        // Mocked request body
+        let request_body = CreateCollectionStruct {
+            collection_name: "test_collection".to_string(),
+            dimension: 100,
+            distance: Distance::Euclidean,
+        };
+    
+        let db = Arc::new(Mutex::new(CacheDB::new()));
+        let reply = create_collection_handler(request_body.clone(), db.clone()).await.unwrap();
+        let response = reply.into_response();
+    
+        assert_eq!(response.status(), StatusCode::OK);
+    
+        let body = warp::hyper::body::aggregate(response.into_body()).await.unwrap();
+        let body_value: Value = serde_json::from_reader(body.reader()).unwrap();
+        let expected_response = json!({
+            "result": "success",
+            "status": "Collection created"
+        });
+        assert_eq!(body_value, expected_response);
+    
+        // Verify that the collection was actually created in the database
+        let db_lock = db.lock().unwrap();
+        let collection = db_lock.get_collection(&request_body.collection_name).unwrap();
+        assert_eq!(collection.dimension, request_body.dimension);
+        assert_eq!(collection.distance, request_body.distance);
+    }    
+
+}
+
+
+
+
