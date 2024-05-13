@@ -450,4 +450,34 @@ mod tests {
         assert!(result.is_none());
     }
 
+    #[test]
+    fn test_get_similarity() {
+        // Prepare a collection with embeddings for testing
+        let collection = Collection {
+            dimension: 3,
+            distance: Distance::Euclidean,
+            embeddings: vec![
+                Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None },
+                Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
+                Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
+            ],
+        };
+
+        // Define a query vector
+        let query = vec![0.0, 0.0, 0.0];
+
+        // Define the expected similarity results
+        let expected_results = vec![
+            SimilarityResult { score: 0.0, embedding: Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None } },
+            SimilarityResult { score: 0.0, embedding: Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None } },
+            SimilarityResult { score: 0.0, embedding: Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None } },
+        ];
+
+        // Call the get_similarity method
+        let results = collection.get_similarity(&query, 3);
+
+        // Assert that the results are as expected
+        assert_eq!(results, expected_results);
+    }
+
 }

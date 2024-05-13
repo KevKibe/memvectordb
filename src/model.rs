@@ -7,7 +7,7 @@ pub struct CacheDB {
 	pub collections: HashMap<String, Collection>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema, PartialEq)]
 pub struct SimilarityResult {
 	pub score: f32,
 	pub embedding: Embedding,
