@@ -30,7 +30,7 @@ pub async fn create_collection_handler(
             println!("Successfully created collection: {:?}", collection);
             Ok(json(&CreateCollectionResponse {
                 result: "success".to_string(),
-                status: "Collection created".to_string(),
+                status: format!("Collection created: {:?}", collection_name),
             }))
         }
         Err(err) => {
@@ -206,7 +206,7 @@ mod tests {
         let body_value: Value = serde_json::from_reader(body.reader()).unwrap();
         let expected_response = json!({
             "result": "success",
-            "status": "Collection created"
+            "status": "Collection created: \"test_collection\"",
         });
         assert_eq!(body_value, expected_response);
     
