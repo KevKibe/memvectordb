@@ -75,7 +75,7 @@ pub struct CollectionHandlerStruct{
 
 pub struct UpdateCollectionStruct{
 	pub collection_name: String,
-	pub new_embeddings: Vec<Embedding>,
+	pub embeddings: Vec<Embedding>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]

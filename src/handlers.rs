@@ -109,7 +109,7 @@ pub async fn update_collection_handler(
 ) -> Result<impl Reply, Rejection> {
     let mut db_lock = db.lock().map_err(|_| warp::reject::reject())?;
     
-    let result = db_lock.update_collection(&body.collection_name, body.new_embeddings);
+    let result = db_lock.update_collection(&body.collection_name, body.embeddings);
     match result {
         Ok(_) => {
             let success_message = format!("Collection '{}' updated successfully", body.collection_name);
@@ -349,13 +349,13 @@ mod tests {
         let _ = create_collection_handler(request_body.clone(), db.clone()).await.unwrap();
 
         // Update the collection
-        let new_embeddings = vec![
+        let embeddings = vec![
             Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
             Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
         ];
         let request_body = UpdateCollectionStruct {
             collection_name: collection_name.clone(),
-            new_embeddings: new_embeddings.clone(),
+            embeddings: embeddings.clone(),
         };
         let reply = update_collection_handler(request_body.clone(), db.clone()).await.unwrap();
         let response = reply.into_response();
@@ -370,10 +370,10 @@ mod tests {
         let mut body = warp::hyper::body::aggregate(response.into_body()).await.unwrap();
         let body_bytes = body.copy_to_bytes(body.remaining());
         let body_str = String::from_utf8(body_bytes.to_vec()).unwrap();
-        let embeddings: Vec<Embedding> = serde_json::from_str(&body_str).unwrap();
+        let _embeddings: Vec<Embedding> = serde_json::from_str(&body_str).unwrap();
     
-        assert_eq!(embeddings.len(), 2);
-        assert_eq!(embeddings[0], new_embeddings[0]);
+        assert_eq!(_embeddings.len(), 2);
+        assert_eq!(_embeddings[0], embeddings[0]);
     }
 
     #[tokio::test]
@@ -382,13 +382,13 @@ mod tests {
         let collection_name = "non_existent_collection".to_string();
 
         // Try to update a non-existent collection
-        let new_embeddings = vec![
+        let embeddings = vec![
             Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
             Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
         ];
         let request_body = UpdateCollectionStruct {
             collection_name: collection_name.clone(),
-            new_embeddings: new_embeddings.clone(),
+            embeddings: embeddings.clone(),
         };
         let reply = update_collection_handler(request_body, db.clone()).await.unwrap();
         let response = reply.into_response();
