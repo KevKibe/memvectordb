@@ -6,10 +6,10 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
-COPY --from=planner /tinyvector/recipe.json recipe.json
+COPY --from=planner /memvectordb/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --bin tinyvector
+RUN cargo build --release --bin memvectordb
 
 FROM debian:bookworm-slim as runtime
 WORKDIR /memvectordb
