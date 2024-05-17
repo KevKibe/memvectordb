@@ -73,7 +73,7 @@ pub struct CollectionHandlerStruct{
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
 
-pub struct UpdateCollectionStruct{
+pub struct BatchInsertEmbeddingsStruct{
 	pub collection_name: String,
 	pub embeddings: Vec<Embedding>,
 }

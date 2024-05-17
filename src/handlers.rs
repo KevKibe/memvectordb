@@ -1,6 +1,6 @@
 use warp::{Rejection, Reply, http::StatusCode, reply::json, reply::with_status, reply::WithStatus, reply::Json};
 use crate::{
-    model::{CacheDB, CreateCollectionStruct, InsertEmbeddingStruct, CollectionHandlerStruct, UpdateCollectionStruct, GetSimilarityStruct},
+    model::{CacheDB, CreateCollectionStruct, InsertEmbeddingStruct, CollectionHandlerStruct, BatchInsertEmbeddingsStruct, GetSimilarityStruct},
     response::{CreateCollectionResponse, GenericResponse},
     WebResult
 };
@@ -103,8 +103,8 @@ pub async fn delete_collection_handler(
     }
 }
 
-pub async fn update_collection_handler(
-    body: UpdateCollectionStruct,
+pub async fn batch_insert_embeddings_handler(
+    body: BatchInsertEmbeddingsStruct,
     db: Arc<Mutex<CacheDB>>,
 ) -> Result<impl Reply, Rejection> {
     let mut db_lock = db.lock().map_err(|_| warp::reject::reject())?;
@@ -353,11 +353,11 @@ mod tests {
             Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
             Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
         ];
-        let request_body = UpdateCollectionStruct {
+        let request_body = BatchInsertEmbeddingsStruct {
             collection_name: collection_name.clone(),
             embeddings: embeddings.clone(),
         };
-        let reply = update_collection_handler(request_body.clone(), db.clone()).await.unwrap();
+        let reply = batch_insert_embeddings_handler(request_body.clone(), db.clone()).await.unwrap();
         let response = reply.into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
@@ -386,11 +386,11 @@ mod tests {
             Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
             Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
         ];
-        let request_body = UpdateCollectionStruct {
+        let request_body = BatchInsertEmbeddingsStruct {
             collection_name: collection_name.clone(),
             embeddings: embeddings.clone(),
         };
-        let reply = update_collection_handler(request_body, db.clone()).await.unwrap();
+        let reply = batch_insert_embeddings_handler(request_body, db.clone()).await.unwrap();
         let response = reply.into_response();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);

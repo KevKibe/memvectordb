@@ -10,7 +10,7 @@ use handlers::{
     insert_embeddings_handler, 
     get_collection_handler, 
     delete_collection_handler, 
-    update_collection_handler, 
+    batch_insert_embeddings_handler, 
     get_similarity_handler,
     get_embeddings_handler
 };
@@ -20,7 +20,7 @@ use crate::model::{
     CreateCollectionStruct, 
     InsertEmbeddingStruct, 
     CollectionHandlerStruct, 
-    UpdateCollectionStruct, 
+    BatchInsertEmbeddingsStruct, 
     GetSimilarityStruct
 };
 use std::sync::{Arc, Mutex};
@@ -64,11 +64,11 @@ async fn main() {
         .and(with_db.clone())
         .and_then(delete_collection_handler);
 
-    let update_collection_route = warp::path!("update_collection")
+    let batch_insert_embeddings_route = warp::path!("batch_insert_embeddings")
         .and(warp::post())
-        .and(warp::body::json::<UpdateCollectionStruct>())
+        .and(warp::body::json::<BatchInsertEmbeddingsStruct>())
         .and(with_db.clone())
-        .and_then(update_collection_handler);
+        .and_then(batch_insert_embeddings_handler);
 
     let get_similarity_route = warp::path!("get_similarity")
         .and(warp::post())
@@ -87,7 +87,7 @@ async fn main() {
         .or(insert_embeddings_route)
         .or(get_collection_route)
         .or(delete_collection_route)
-        .or(update_collection_route)
+        .or(batch_insert_embeddings_route)
         .or(get_similarity_route)
         .or(get_embeddings_route);
 
