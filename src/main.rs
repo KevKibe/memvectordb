@@ -24,7 +24,6 @@ use crate::model::{
     GetSimilarityStruct
 };
 use std::sync::{Arc, Mutex};
-
 type WebResult<T> = std::result::Result<T, Rejection>;
 
 
@@ -47,37 +46,37 @@ async fn main() {
         .and_then(create_collection_handler);
 
     let insert_embeddings_route = warp::path!("insert_embeddings")
-        .and(warp::post())
+        .and(warp::put())
         .and(warp::body::json::<InsertEmbeddingStruct>())
         .and(with_db.clone())  
         .and_then(insert_embeddings_handler);
 
     let get_collection_route = warp::path!("get_collection")
-        .and(warp::post())
+        .and(warp::get())
         .and(warp::body::json::<CollectionHandlerStruct>())
         .and(with_db.clone())  
         .and_then(get_collection_handler);
 
     let delete_collection_route = warp::path!("delete_collection")
-        .and(warp::post())
+        .and(warp::delete())
         .and(warp::body::json::<CollectionHandlerStruct>())
         .and(with_db.clone())
         .and_then(delete_collection_handler);
 
     let batch_insert_embeddings_route = warp::path!("batch_insert_embeddings")
-        .and(warp::post())
+        .and(warp::put())
         .and(warp::body::json::<BatchInsertEmbeddingsStruct>())
         .and(with_db.clone())
         .and_then(batch_insert_embeddings_handler);
 
     let get_similarity_route = warp::path!("get_similarity")
-        .and(warp::post())
+        .and(warp::get())
         .and(warp::body::json::<GetSimilarityStruct>())
         .and(with_db.clone())
         .and_then(get_similarity_handler);
 
     let get_embeddings_route = warp::path!("get_embeddings")
-        .and(warp::post())
+        .and(warp::get())
         .and(warp::body::json::<CollectionHandlerStruct>())
         .and(with_db.clone())
         .and_then(get_embeddings_handler);
@@ -97,4 +96,5 @@ async fn main() {
         .run(([0, 0, 0, 0], 8000))
         .await;
 }
+
 
