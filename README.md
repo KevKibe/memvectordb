@@ -53,5 +53,62 @@ docker run -p 8000:8000 --platform linux/amd64 kevkibe/memvectordb
 
 MemVectorDB Python client: [Docs](https://github.com/KevKibe/memvectordb-python-client/blob/main/README.md)
 
-### In Development
-- semantic search
+## Load Tests
+- All tests done with 100000 requests on a Macbook Air M1.
+### POST
+```console
+Summary:
+  Success rate: 100.00%
+  Total:        1.9317 secs
+  Slowest:      0.0363 secs
+  Fastest:      0.0000 secs
+  Average:      0.0010 secs
+  Requests/sec: 51766.9796
+
+  Total data:   5.15 MiB
+  Size/request: 54 B
+  Size/sec:     2.67 MiB
+```
+### GET
+```console
+Summary:
+  Success rate: 100.00%
+  Total:        1.0847 secs
+  Slowest:      0.0081 secs
+  Fastest:      0.0000 secs
+  Average:      0.0005 secs
+  Requests/sec: 92191.6443
+
+  Total data:   4.58 MiB
+  Size/request: 48 B
+  Size/sec:     4.22 MiB
+```
+### DELETE
+```console
+Summary:
+  Success rate: 100.00%
+  Total:        1.0714 secs
+  Slowest:      0.0168 secs
+  Fastest:      0.0000 secs
+  Average:      0.0005 secs
+  Requests/sec: 93339.6446
+
+  Total data:   5.05 MiB
+  Size/request: 52 B
+  Size/sec:     4.72 MiB
+```
+### PUT
+```console
+Summary:
+  Success rate: 100.00%
+  Total:        2.8909 secs
+  Slowest:      0.0307 secs
+  Fastest:      0.0001 secs
+  Average:      0.0014 secs
+  Requests/sec: 34591.4733
+
+  Total data:   7.72 MiB
+  Size/request: 80 B
+  Size/sec:     2.67 MiB
+
+```
