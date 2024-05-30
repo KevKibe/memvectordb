@@ -1,7 +1,5 @@
 use rayon::prelude::*;
-use std::{
-    collections::{BinaryHeap, HashMap},
-};
+use std::collections::{BinaryHeap, HashMap};
 use crate::similarity::{get_cache_attr, get_distance_fn, normalize, ScoreIndex};
 use crate::model::{CacheDB, SimilarityResult, Collection, Embedding, Distance, Error};
 
@@ -238,6 +236,7 @@ impl CacheDB {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::MetadataValue;
 
     #[test]
     fn test_create_collection_success_eucledean() {
@@ -295,8 +294,8 @@ mod tests {
         };
         db.collections.insert("test_collection".to_string(), collection);
         let mut metadata = HashMap::new();
-        metadata.insert("page".to_string(), "1".to_string());
-        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        metadata.insert("page".to_string(), MetadataValue::Str("1".to_string()));
+        metadata.insert("text".to_string(), MetadataValue::Str("This is a test metadata text".to_string()));
 
         let embedding = Embedding {
             id: "1".to_string(),
@@ -318,8 +317,8 @@ mod tests {
     fn test_update_collection_success() {
         let mut db = CacheDB::new();
         let mut metadata = HashMap::new();
-        metadata.insert("page".to_string(), "1".to_string());
-        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        metadata.insert("page".to_string(), MetadataValue::Str("1".to_string()));
+        metadata.insert("text".to_string(), MetadataValue::Str("This is a test metadata text".to_string()));
         let collection = Collection {
             dimension: 3,
             distance: Distance::Euclidean,
@@ -357,8 +356,8 @@ mod tests {
     fn test_update_collection_duplicate_embedding() {
         let mut db = CacheDB::new();
         let mut metadata = HashMap::new();
-        metadata.insert("page".to_string(), "1".to_string());
-        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        metadata.insert("page".to_string(), MetadataValue::Str("1".to_string()));
+        metadata.insert("text".to_string(), MetadataValue::Str("This is a test metadata text".to_string()));
         let collection = Collection {
             dimension: 3,
             distance: Distance::Euclidean,
@@ -398,8 +397,8 @@ mod tests {
         };
         db.collections.insert("test_collection".to_string(), collection);
         let mut metadata = HashMap::new();
-        metadata.insert("page".to_string(), "1".to_string());
-        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+        metadata.insert("page".to_string(), MetadataValue::Str("1".to_string()));
+        metadata.insert("text".to_string(), MetadataValue::Str("This is a test metadata text".to_string()));
         let new_embeddings = vec![
             Embedding {
                 id: "1".to_string(),
