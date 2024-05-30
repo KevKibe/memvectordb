@@ -6,7 +6,7 @@ use crate::{
 };
 use std::sync::{Arc, Mutex};
 
- 
+
 pub async fn health_checker_handler() -> WebResult<impl Reply> {
     const MESSAGE: &str = "Health Check Sucessful!🚀";
 
@@ -167,7 +167,7 @@ mod tests {
     use warp::http::StatusCode;
     use warp::Buf;
     use serde_json::{Value, json};
-    use crate::model::{Distance, Embedding, SimilarityResult, CacheDB,MetadataValue};
+    use crate::model::{Distance, Embedding, SimilarityResult, CacheDB};
     use std::collections::HashMap;
 
     #[tokio::test]
@@ -411,8 +411,8 @@ mod tests {
         let _ = create_collection_handler(request_body.clone(), db.clone()).await.unwrap();
 
         let mut metadata = HashMap::new();
-        metadata.insert("page".to_string(), MetadataValue::Str("1".to_string()));
-        metadata.insert("text".to_string(), MetadataValue::Str("This is a test metadata text".to_string()));
+        metadata.insert("page".to_string(), "1".to_string());
+        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
 
         // Insert an embedding into the collection
         let embedding = Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: Some(metadata.clone())};
@@ -497,3 +497,6 @@ mod tests {
     }
 
 }
+
+
+

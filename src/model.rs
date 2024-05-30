@@ -13,7 +13,6 @@ pub struct SimilarityResult {
 	pub embedding: Embedding,
 }
 
-
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema, PartialEq)]
 pub struct Collection {
 	pub dimension: usize,
@@ -21,17 +20,11 @@ pub struct Collection {
 	#[serde(default)]
 	pub embeddings: Vec<Embedding>,
 }
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, JsonSchema)]
-pub enum MetadataValue {
-    Str(String),
-    Int(i32),
-	Float(f32),
-}
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema, PartialEq)]
 pub struct Embedding {
 	pub id: String,
 	pub vector: Vec<f32>,
-	pub metadata: Option<HashMap<String, MetadataValue>>,
+	pub metadata: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
