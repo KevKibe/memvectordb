@@ -1,10 +1,22 @@
 use rayon::prelude::*;
-use std::{
-    collections::{BinaryHeap, HashMap},
-};
+use std::collections::{BinaryHeap, HashMap};
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 use crate::similarity::{get_cache_attr, get_distance_fn, normalize, ScoreIndex};
 use crate::model::{CacheDB, SimilarityResult, Collection, Embedding, Distance, Error};
 
+
+// Define a function to hash a HashMap<String, String>.
+// A custom hash function, you ensure that the hash value is based solely on the content of the HashMap
+pub fn hash_map_id(id: &HashMap<String, String>) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    for (key, value) in id {
+        key.hash(&mut hasher);
+        value.hash(&mut hasher);
+    }
+    hasher.finish()
+}
 
 /// A collection that stores embeddings and handles similarity calculations.
 impl Collection {
@@ -137,8 +149,14 @@ impl CacheDB {
             .get_mut(collection_name)
             .ok_or(Error::NotFound)?;
 
-        // Check for duplicate embeddings by ID.
-        if collection.embeddings.iter().any(|e| e.id == embedding.id) {
+        // Create a HashSet to track unique hashed IDs.
+        let mut unique_ids: HashSet<u64> = collection.embeddings
+            .iter()
+            .map(|e| hash_map_id(&e.id))
+            .collect();
+
+        // Check for duplicate embeddings by hashed ID.
+        if !unique_ids.insert(hash_map_id(&embedding.id)) {
             return Err(Error::UniqueViolation);
         }
 
@@ -180,8 +198,14 @@ impl CacheDB {
 
         // Iterate through each new embedding.
         for mut embedding in new_embeddings {
-            // Check for duplicate embeddings by ID.
-            if collection.embeddings.iter().any(|e| e.id == embedding.id) {
+            // Create a HashSet to track unique hashed IDs.
+            let mut unique_ids: HashSet<u64> = collection.embeddings
+            .iter()
+            .map(|e| hash_map_id(&e.id))
+            .collect();
+
+            // Check for duplicate embeddings by hashed ID.
+            if !unique_ids.insert(hash_map_id(&embedding.id)) {
                 return Err(Error::UniqueViolation);
             }
 
@@ -298,8 +322,11 @@ mod tests {
         metadata.insert("page".to_string(), "1".to_string());
         metadata.insert("text".to_string(), "This is a test metadata text".to_string());
 
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "1".to_string());
+        
         let embedding = Embedding {
-            id: "1".to_string(),
+            id: id,
             vector: vec![1.0, 2.0, 3.0],
             metadata: Some(metadata)
         };
@@ -317,30 +344,41 @@ mod tests {
     #[test]
     fn test_update_collection_success() {
         let mut db = CacheDB::new();
+
         let mut metadata = HashMap::new();
         metadata.insert("page".to_string(), "1".to_string());
         metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
         let collection = Collection {
             dimension: 3,
             distance: Distance::Euclidean,
             embeddings: vec![Embedding {
-                id: "1".to_string(),
+                id: id,
                 vector: vec![1.0, 2.0, 3.0],
                 metadata: Some(metadata.clone())
             }],
         };
+
         db.collections.insert("test_collection".to_string(), collection);
+
+        let mut id_1 = HashMap::new();
+        id_1.insert("unique_id".to_string(), "1".to_string());
+        let mut id_2 = HashMap::new();
+        id_2.insert("unique_id".to_string(), "2".to_string());
 
         let new_embeddings = vec![
             Embedding {
-                id: "2".to_string(),
+                id: id_1, // Duplicate ID
                 vector: vec![4.0, 5.0, 6.0],
-                metadata: Some(metadata.clone()),
+                metadata: Some(metadata.clone())
             },
             Embedding {
-                id: "3".to_string(),
+                id: id_2,
                 vector: vec![7.0, 8.0, 9.0],
-                metadata: Some(metadata.clone()),
+                metadata: Some(metadata.clone())
             },
         ];
 
@@ -359,25 +397,34 @@ mod tests {
         let mut metadata = HashMap::new();
         metadata.insert("page".to_string(), "1".to_string());
         metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
         let collection = Collection {
             dimension: 3,
             distance: Distance::Euclidean,
             embeddings: vec![Embedding {
-                id: "1".to_string(),
+                id: id.clone(),
                 vector: vec![1.0, 2.0, 3.0],
                 metadata: Some(metadata.clone())
             }],
         };
         db.collections.insert("test_collection".to_string(), collection);
 
+        let mut id_1 = HashMap::new();
+        id_1.insert("unique_id".to_string(), "1".to_string());
+        let mut id_2 = HashMap::new();
+        id_2.insert("unique_id".to_string(), "2".to_string());
+
         let new_embeddings = vec![
             Embedding {
-                id: "1".to_string(), // Duplicate ID
+                id: id, // Duplicate ID
                 vector: vec![4.0, 5.0, 6.0],
                 metadata: Some(metadata.clone())
             },
             Embedding {
-                id: "2".to_string(),
+                id: id_2,
                 vector: vec![7.0, 8.0, 9.0],
                 metadata: Some(metadata.clone())
             },
@@ -397,12 +444,17 @@ mod tests {
             embeddings: Vec::new(),
         };
         db.collections.insert("test_collection".to_string(), collection);
+
         let mut metadata = HashMap::new();
         metadata.insert("page".to_string(), "1".to_string());
         metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
         let new_embeddings = vec![
             Embedding {
-                id: "1".to_string(),
+                id: id,
                 vector: vec![1.0, 2.0], 
                 metadata: Some(metadata)// Dimension mismatch
             },
@@ -468,13 +520,22 @@ mod tests {
     fn test_get_embedding_success() {
         let mut db = CacheDB::new();
 
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
+        let mut id_1 = HashMap::new();
+        id_1.insert("unique_id".to_string(), "1".to_string());
+
+        let mut id_2 = HashMap::new();
+        id_2.insert("unique_id".to_string(), "2".to_string());
+
         let collection = Collection {
             dimension: 3,
             distance: Distance::Euclidean,
             embeddings: vec![
-                Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None },
-                Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
-                Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
+                Embedding { id: id, vector: vec![1.0, 1.0, 1.0], metadata: None },
+                Embedding { id: id_1, vector: vec![2.0, 2.0, 2.0], metadata: None },
+                Embedding { id: id_2, vector: vec![3.0, 3.0, 3.0], metadata: None },
             ],
         };
         db.collections.insert("test_collection".to_string(), collection.clone());
@@ -495,14 +556,22 @@ mod tests {
 
     #[test]
     fn test_get_similarity() {
-        // Prepare a collection with embeddings for testing
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
+        let mut id_1 = HashMap::new();
+        id_1.insert("unique_id".to_string(), "1".to_string());
+
+        let mut id_2 = HashMap::new();
+        id_2.insert("unique_id".to_string(), "2".to_string());
+
         let collection = Collection {
             dimension: 3,
             distance: Distance::Euclidean,
             embeddings: vec![
-                Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None },
-                Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
-                Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
+                Embedding { id: id.clone(), vector: vec![1.0, 1.0, 1.0], metadata: None },
+                Embedding { id: id_1.clone(), vector: vec![2.0, 2.0, 2.0], metadata: None },
+                Embedding { id: id_2.clone(), vector: vec![3.0, 3.0, 3.0], metadata: None },
             ],
         };
 
@@ -511,9 +580,9 @@ mod tests {
 
         // Define the expected similarity results
         let expected_results = vec![
-            SimilarityResult { score: 0.0, embedding: Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None } },
-            SimilarityResult { score: 0.0, embedding: Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None } },
-            SimilarityResult { score: 0.0, embedding: Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None } },
+            SimilarityResult { score: 0.0, embedding: Embedding { id: id_1, vector: vec![2.0, 2.0, 2.0], metadata: None } },
+            SimilarityResult { score: 0.0, embedding: Embedding { id: id_2, vector: vec![3.0, 3.0, 3.0], metadata: None } },
+            SimilarityResult { score: 0.0, embedding: Embedding { id: id, vector: vec![1.0, 1.0, 1.0], metadata: None } },
         ];
 
         // Call the get_similarity method
