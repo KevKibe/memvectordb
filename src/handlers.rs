@@ -231,10 +231,11 @@ mod tests {
         let response = reply.into_response();
     
         assert_eq!(response.status(), StatusCode::OK);
-
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "1".to_string());
         let request_body = InsertEmbeddingStruct {
             collection_name: "test_collection".to_string(),
-            embedding: Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: None },
+            embedding: Embedding { id: id, vector: vec![1.0, 1.0, 1.0], metadata: None },
         };
         let reply = insert_embeddings_handler(request_body.clone(), db.clone()).await.unwrap();
         let response = reply.into_response();
@@ -348,10 +349,16 @@ mod tests {
         };
         let _ = create_collection_handler(request_body.clone(), db.clone()).await.unwrap();
 
+        let mut id_1 = HashMap::new();
+        id_1.insert("unique_id".to_string(), "1".to_string());
+
+        let mut id_2 = HashMap::new();
+        id_2.insert("unique_id".to_string(), "2".to_string());
+
         // Update the collection
         let embeddings = vec![
-            Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
-            Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
+            Embedding { id: id_1, vector: vec![2.0, 2.0, 2.0], metadata: None },
+            Embedding { id: id_2, vector: vec![3.0, 3.0, 3.0], metadata: None },
         ];
         let request_body = BatchInsertEmbeddingsStruct {
             collection_name: collection_name.clone(),
@@ -381,10 +388,16 @@ mod tests {
         let db = Arc::new(Mutex::new(CacheDB::new()));
         let collection_name = "non_existent_collection".to_string();
 
+        let mut id_1 = HashMap::new();
+        id_1.insert("unique_id".to_string(), "1".to_string());
+
+        let mut id_2 = HashMap::new();
+        id_2.insert("unique_id".to_string(), "2".to_string());
+
         // Try to update a non-existent collection
         let embeddings = vec![
-            Embedding { id: "2".to_string(), vector: vec![2.0, 2.0, 2.0], metadata: None },
-            Embedding { id: "3".to_string(), vector: vec![3.0, 3.0, 3.0], metadata: None },
+            Embedding { id: id_1, vector: vec![2.0, 2.0, 2.0], metadata: None },
+            Embedding { id: id_2, vector: vec![3.0, 3.0, 3.0], metadata: None },
         ];
         let request_body = BatchInsertEmbeddingsStruct {
             collection_name: collection_name.clone(),
@@ -414,8 +427,11 @@ mod tests {
         metadata.insert("page".to_string(), "1".to_string());
         metadata.insert("text".to_string(), "This is a test metadata text".to_string());
 
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
         // Insert an embedding into the collection
-        let embedding = Embedding { id: "1".to_string(), vector: vec![1.0, 1.0, 1.0], metadata: Some(metadata.clone())};
+        let embedding = Embedding { id: id, vector: vec![1.0, 1.0, 1.0], metadata: Some(metadata.clone())};
         
         let insert_request_body = InsertEmbeddingStruct {
             collection_name: collection_name.clone(),
