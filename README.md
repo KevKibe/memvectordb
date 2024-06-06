@@ -101,14 +101,13 @@ Summary:
 ```console
 Summary:
   Success rate: 100.00%
-  Total:        2.8909 secs
-  Slowest:      0.0307 secs
+  Total:        2.7216 secs
+  Slowest:      0.0395 secs
   Fastest:      0.0001 secs
   Average:      0.0014 secs
-  Requests/sec: 34591.4733
+  Requests/sec: 36743.3094
 
-  Total data:   7.72 MiB
-  Size/request: 80 B
-  Size/sec:     2.67 MiB
-
+  Total data:   7.06 MiB
+  Size/request: 74 B
+  Size/sec:     2.59 MiB
 ```
