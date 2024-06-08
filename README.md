@@ -32,7 +32,7 @@ make run
 - On x86_64 (Intel/AMD) systems:
 
 ```bash
-docker pull kevkibe/memvectordb
+docker pull kevkibe/memvectordb:v1.5.0
 
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
