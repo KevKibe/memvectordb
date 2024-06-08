@@ -37,7 +37,7 @@ docker pull kevkibe/memvectordb:v1.5.0
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
-docker pull --platform linux/amd64 kevkibe/memvectordb
+docker pull --platform linux/amd64 kevkibe/memvectordb:v1.5.0
 ```
 
 2. Run the Docker container:
