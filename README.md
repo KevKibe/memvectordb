@@ -32,22 +32,22 @@ make run
 - On x86_64 (Intel/AMD) systems:
 
 ```bash
-docker pull kevkibe/memvectordb:v1.5.0
+docker pull kevkibe/memvectordb:v1.6.0
 
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
-docker pull --platform linux/amd64 kevkibe/memvectordb:v1.5.0
+docker pull --platform linux/amd64 kevkibe/memvectordb:v1.6.0
 ```
 
 2. Run the Docker container:
 - On x86_64 (Intel/AMD) systems:
 ```bash
-docker run -p 8000:8000 kevkibe/memvectordb
+docker run -p 8000:8000 kevkibe/memvectordb:v1.6.0
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
-docker run -p 8000:8000 --platform linux/amd64 kevkibe/memvectordb
+docker run -p 8000:8000 --platform linux/amd64 kevkibe/memvectordb:v1.6.0
 ```
 3. Server runs on http://localhost:8000
 
