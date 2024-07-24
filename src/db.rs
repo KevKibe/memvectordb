@@ -5,6 +5,29 @@ use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 use crate::similarity::{get_cache_attr, get_distance_fn, normalize, ScoreIndex};
 use crate::model::{CacheDB, SimilarityResult, Collection, Embedding, Distance, Error};
+use log::{debug, error, info, trace, warn};
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+fn setup_logger() -> Result<(), fern::InitError> {
+    INIT.call_once(|| {
+        let _ = fern::Dispatch::new()
+            .format(|out, message, record| {
+                out.finish(format_args!(
+                    "{} [{}] {}",
+                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    record.level(),
+                    message
+                ))
+            })
+            .level(log::LevelFilter::Info)
+            .chain(std::io::stdout())
+            .chain(fern::log_file("output.log").unwrap())
+            .apply();
+    });
+    Ok(())
+}
 
 
 // Define a function to hash a HashMap<String, String>.
@@ -31,9 +54,15 @@ impl Collection {
     ///
     /// A vector of similarity results, sorted by their similarity scores.
     pub fn get_similarity(&self, query: &[f32], k: usize) -> Vec<SimilarityResult> {
+
+        debug!("Starting similarity computation with query vector of length {} and top k = {}", query.len(), k);
+
         // Prepare cache attributes and distance function based on collection's distance metric.
         let memo_attr = get_cache_attr(self.distance, query);
         let distance_fn = get_distance_fn(self.distance);
+
+        debug!("Using distance function: {:?}", self.distance);
+        debug!("Memo attributes for distance function: {:?}", memo_attr);
 
         // Calculate similarity scores for each embedding in parallel.
         let scores = self.embeddings.par_iter()
@@ -43,7 +72,7 @@ impl Collection {
                 ScoreIndex { score, index }
             })
             .collect::<Vec<_>>();
-
+        debug!("Calculated {} similarity scores", scores.len());
         // Use a binary heap to efficiently find the top k similarity results.
         let mut heap = BinaryHeap::new();
         for score_index in scores {
@@ -55,15 +84,18 @@ impl Collection {
                 }
             }
         }
+        debug!("Top k heap size: {}", heap.len());
 
         // Convert the heap into a sorted vector and map each score to a SimilarityResult.
-        heap.into_sorted_vec()
+        let result: Vec<SimilarityResult> = heap.into_sorted_vec()
             .into_iter()
             .map(|ScoreIndex { score, index }| SimilarityResult {
                 score,
                 embedding: self.embeddings[index].clone(),
             })
-            .collect()
+            .collect();
+        info!("Similarity computed successfully'{}' ", format!("{:?}", result));
+        result
     }
 }
 
@@ -92,8 +124,15 @@ impl CacheDB {
         dimension: usize,
         distance: Distance,
     ) -> Result<Collection, Error> {
+
+        if let Err(e) = setup_logger() {
+            error!("Logger setup failed: {:?}", e);
+            return Err(Error::LoggerInitializationError);
+        }
+
         // Check if a collection with the same name already exists.
         if self.collections.contains_key(&name) {
+            error!("Collection: '{}', already exists", name);
             return Err(Error::UniqueViolation);
         }
 
@@ -103,8 +142,9 @@ impl CacheDB {
             distance,
             embeddings: Vec::new(),
         };
-        self.collections.insert(name, collection.clone());
+        self.collections.insert(name.clone(), collection.clone());
 
+        info!("Created new collection with name: '{}'", name);
         Ok(collection)
     }
 
@@ -118,14 +158,22 @@ impl CacheDB {
     ///
     /// A result indicating success or an error if the collection was not found.
     pub fn delete_collection(&mut self, name: &str) -> Result<(), Error> {
+
+        if let Err(e) = setup_logger() {
+            error!("Logger setup failed: {:?}", e);
+            return Err(Error::LoggerInitializationError);
+        }
+
         // Check if the collection exists before attempting to delete it.
         if !self.collections.contains_key(name) {
+            error!("Collection name: '{}', does not exist", name);
             return Err(Error::NotFound);
         }
 
         // Remove the collection from the database.
         self.collections.remove(name);
 
+        info!("Deleted collection with name: '{}'", name);
         Ok(())
     }
 
@@ -144,10 +192,17 @@ impl CacheDB {
         collection_name: &str,
         mut embedding: Embedding,
     ) -> Result<(), Error> {
+
+        if let Err(e) = setup_logger() {
+            error!("Logger setup failed: {:?}", e);
+            return Err(Error::LoggerInitializationError);
+        }
+
         // Get the collection to insert the embedding into.
         let collection = self.collections
             .get_mut(collection_name)
             .ok_or(Error::NotFound)?;
+        
 
         // Create a HashSet to track unique hashed IDs.
         let mut unique_ids: HashSet<u64> = collection.embeddings
@@ -157,11 +212,18 @@ impl CacheDB {
 
         // Check for duplicate embeddings by hashed ID.
         if !unique_ids.insert(hash_map_id(&embedding.id)) {
-            return Err(Error::UniqueViolation);
+            error!("Embedding with ID '{}' already exists in collection '{}'", format!("{:?}", embedding.id), collection_name);
+            return Err(Error::EmbeddingUniqueViolation);
         }
 
         // Check if the embedding's dimension matches the collection's dimension.
         if embedding.vector.len() != collection.dimension {
+            error!(
+                "Dimension mismatch: embedding vector length is '{}' but collection '{}' expects dimension '{}'",
+                embedding.vector.len(),
+                collection_name,
+                collection.dimension
+            );
             return Err(Error::DimensionMismatch);
         }
 
@@ -173,6 +235,7 @@ impl CacheDB {
         // Add the embedding to the collection.
         collection.embeddings.push(embedding);
 
+        info!("Embedding successfully inserted into collection '{}'", collection_name);
         Ok(())
     }
 
@@ -191,6 +254,12 @@ impl CacheDB {
         collection_name: &str,
         new_embeddings: Vec<Embedding>,
     ) -> Result<(), Error> {
+
+        if let Err(e) = setup_logger() {
+            error!("Logger setup failed: {:?}", e);
+            return Err(Error::LoggerInitializationError);
+        }
+
         // Get the collection to update.
         let collection = self.collections
             .get_mut(collection_name)
@@ -206,11 +275,18 @@ impl CacheDB {
 
             // Check for duplicate embeddings by hashed ID.
             if !unique_ids.insert(hash_map_id(&embedding.id)) {
+                error!("Embedding with ID '{}' already exists in collection '{}'", format!("{:?}", embedding.id), collection_name);
                 return Err(Error::UniqueViolation);
             }
 
             // Check if the embedding's dimension matches the collection's dimension.
             if embedding.vector.len() != collection.dimension {
+                error!(
+                    "Dimension mismatch: embedding vector length is '{}' but collection '{}' expects dimension '{}'",
+                    embedding.vector.len(),
+                    collection_name,
+                    collection.dimension
+                );
                 return Err(Error::DimensionMismatch);
             }
 
@@ -223,6 +299,7 @@ impl CacheDB {
             collection.embeddings.push(embedding);
         }
 
+        info!("Embedding successfully updated to collection '{}'", collection_name);
         Ok(())
     }
 
@@ -236,7 +313,20 @@ impl CacheDB {
     ///
     /// An optional reference to the collection if found.
     pub fn get_collection(&self, collection_name: &str) -> Option<&Collection> {
-        self.collections.get(collection_name)
+        if let Err(e) = setup_logger() {
+            error!("Logger setup failed: {:?}", e);
+        }
+    
+        match self.collections.get(collection_name) {
+            Some(collection) => {
+                info!("Collection '{}' found", collection_name);
+                Some(collection)
+            },
+            None => {
+                error!("Collection '{}' not found", collection_name);
+                None
+            }
+        }
     }
 
     /// Retrieve embeddings from a collection in the database.
@@ -249,8 +339,21 @@ impl CacheDB {
     ///
     /// An optional reference to the embeddings if found.
     pub fn get_embeddings(&self, collection_name: &str) -> Option<Vec<Embedding>> {
-        self.collections.get(collection_name).map(|collection| collection.embeddings.clone())
-    }    
+        if let Err(e) = setup_logger() {
+            error!("Logger setup failed: {:?}", e);
+        }
+    
+        match self.collections.get(collection_name) {
+            Some(collection) => {
+                info!("Successfully retrieved embeddings for collection '{}'", collection_name);
+                Some(collection.embeddings.clone())
+            },
+            None => {
+                error!("Collection '{}' not found", collection_name);
+                None
+            }
+        }
+    }  
 }
 
 
