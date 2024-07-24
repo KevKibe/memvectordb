@@ -44,11 +44,17 @@ pub enum Error {
 	#[error("Collection already exists")]
 	UniqueViolation,
 
+	#[error("Embedding already exists")]
+	EmbeddingUniqueViolation,
+
 	#[error("Collection doesn't exist")]
 	NotFound,
 
 	#[error("The dimension of the vector doesn't match the dimension of the collection")]
 	DimensionMismatch,
+
+	#[error("Failed to initialize the logger")]
+    LoggerInitializationError,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, JsonSchema)]
