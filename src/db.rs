@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 use crate::similarity::{get_cache_attr, get_distance_fn, normalize, ScoreIndex};
 use crate::model::{CacheDB, SimilarityResult, Collection, Embedding, Distance, Error};
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info};
 use std::sync::Once;
 
 static INIT: Once = Once::new();
@@ -144,7 +144,7 @@ impl CacheDB {
         };
         self.collections.insert(name.clone(), collection.clone());
 
-        info!("Created new collection with name: '{}'", name);
+        info!("Created new collection with name: '{}', dimension: '{}', distance: '{:?}'", name, dimension, distance);
         Ok(collection)
     }
 
@@ -173,7 +173,7 @@ impl CacheDB {
         // Remove the collection from the database.
         self.collections.remove(name);
 
-        info!("Deleted collection with name: '{}'", name);
+        info!("Deleted collection: '{}'", name);
         Ok(())
     }
 
@@ -233,9 +233,9 @@ impl CacheDB {
         }
 
         // Add the embedding to the collection.
-        collection.embeddings.push(embedding);
+        collection.embeddings.push(embedding.clone());
 
-        info!("Embedding successfully inserted into collection '{}'", collection_name);
+        info!("Embedding: '{:?}', successfully inserted into collection '{}'", embedding, collection_name);
         Ok(())
     }
 
@@ -252,7 +252,7 @@ impl CacheDB {
     pub fn update_collection(
         &mut self,
         collection_name: &str,
-        new_embeddings: Vec<Embedding>,
+        mut new_embeddings: Vec<Embedding>,
     ) -> Result<(), Error> {
 
         if let Err(e) = setup_logger() {
@@ -266,7 +266,7 @@ impl CacheDB {
             .ok_or(Error::NotFound)?;
 
         // Iterate through each new embedding.
-        for mut embedding in new_embeddings {
+        for embedding in &mut new_embeddings {
             // Create a HashSet to track unique hashed IDs.
             let mut unique_ids: HashSet<u64> = collection.embeddings
             .iter()
@@ -296,10 +296,10 @@ impl CacheDB {
             }
 
             // Add the embedding to the collection.
-            collection.embeddings.push(embedding);
+            collection.embeddings.push(embedding.clone());
         }
 
-        info!("Embedding successfully updated to collection '{}'", collection_name);
+        info!("Embedding: '{:?}' successfully updated to collection '{}'", new_embeddings, collection_name);
         Ok(())
     }
 
