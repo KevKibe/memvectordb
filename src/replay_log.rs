@@ -25,8 +25,7 @@ pub fn replay_logs() -> Result<(), String> {
             parse_and_create_collection(&cleaned_entry, db.clone());
         }
         else if cleaned_entry.contains("successfully inserted into collection") {
-            // println!("{}", cleaned_entry);
-            // parse_and_insert_embeddings(&cleaned_entry, db.clone());
+            parse_and_insert_embeddings(&cleaned_entry, db.clone());
         }
     }
     Ok(())
@@ -52,7 +51,6 @@ fn split_by_date(log: &str) -> Vec<String> {
 }
 
 pub fn parse_and_create_collection(log_line :&str, db: Arc<Mutex<CacheDB>>) -> Result<(), Box<dyn Error>> {
-    print!("{}", log_line);
     let re = Regex::new(
         r"Created new collection with name: '([^']+)', dimension: '(\d+)', distance: '([^']+)'",
     )?;
@@ -80,51 +78,49 @@ pub fn parse_and_create_collection(log_line :&str, db: Arc<Mutex<CacheDB>>) -> R
 }
 
 
-// pub fn parse_and_insert_embeddings(log_line: &str, db: Arc<Mutex<CacheDB>>) -> Result<(), Box<dyn Error>> {
-//     let re = Regex::new(
-//         r#"Embedding: 'Embedding \{ id: \{"unique_id": "(\d+)"\}, vector: \[([0-9.,\s]+)\], metadata: Some\{([^}]*)\}\}', successfully inserted into collection '([^']*)'"#,
-//     )?;
-//     println!("{}", re);
+pub fn parse_and_insert_embeddings(log_line: &str, db: Arc<Mutex<CacheDB>>) -> Result<(), Box<dyn Error>> {
+    let re = Regex::new(
+        r#"Embedding: 'Embedding \{ id: \{"unique_id": "(\d+)"\}, vector: \[([0-9.,\s]+)\], metadata: Some\(\{(.*?)\}\) \}', successfully inserted into collection '([^']*)'"#
+    )?;
 
-//     if let Some(caps) = re.captures(log_line) {
-//         let collection_name = caps.get(4).map_or("", |m| m.as_str()).to_string();
-//         println!("Collection Name: {}", collection_name);
-    
-//         let vector: Vec<f32> = caps.get(2)
-//             .map_or("", |m| m.as_str())
-//             .split(',')
-//             .filter_map(|s| s.trim().parse().ok())
-//             .collect();
-    
-//         let metadata = caps.get(3).map_or(None, |m| {
-//             let metadata_str = m.as_str();
-//             if metadata_str.is_empty() {
-//                 None
-//             } else {
-//                 Some(metadata_str
-//                     .split(',')
-//                     .map(|entry| {
-//                         let mut kv = entry.trim().split(':');
-//                         let key = kv.next().unwrap_or("").trim().to_string();
-//                         let value = kv.next().unwrap_or("").trim().to_string();
-//                         (key, value)
-//                     })
-//                     .collect())
-//             }
-//         });
-    
-//         let embedding = Embedding {
-//             id: HashMap::new(),
-//             vector,
-//             metadata,
-//         };
+    if let Some(caps) = re.captures(log_line) {
+        let collection_name = caps.get(4).map_or("", |m| m.as_str()).to_string();
+        
+        let vector: Vec<f32> = caps.get(2)
+            .map_or("", |m| m.as_str())
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
 
-//         println!("{:?}", embedding);
-//         // let mut db = db.lock().map_err(|e| format!("Failed to lock the database: {}", e))?;
-//         // db.insert_into_collection(&collection_name, embedding)?;
-//     } else {
-//         eprintln!("Log line format is incorrect: {}", log_line);
-//     }
+        let metadata = caps.get(3).map(|m| {
+            let metadata_str = m.as_str();
+            metadata_str
+                .split(',')
+                .map(|entry| {
+                    let mut kv = entry.splitn(2, ':');
+                    let key = kv.next().unwrap_or("").trim().trim_matches('"').to_string();
+                    let value = kv.next().unwrap_or("").trim().trim_matches('"').to_string();
+                    (key, value)
+                })
+                .collect::<HashMap<String, String>>()  
+        });
 
-//     Ok(())
-// }
+        let unique_id = caps.get(1).map_or("", |m| m.as_str()).to_string();
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), unique_id);
+
+        let embedding = Embedding {
+            id,
+            vector,
+            metadata,
+        };
+
+        let mut db = db.lock().map_err(|e| format!("Failed to lock the database: {}", e))?;
+        db.insert_into_collection(&collection_name, embedding)?;
+    } 
+    else {
+        eprintln!("Log line format is incorrect: {}", log_line);
+    }
+
+    Ok(())
+}
