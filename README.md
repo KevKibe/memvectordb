@@ -2,10 +2,11 @@
 An fast in-memory VectorDB in rust.
 
 ## ⚡️ Features
-- Fast: MemVectorDB stores vectors in-memory, ensuring fast insertion and retrieval operations.
-- Vertical Scalability: With vectors stored in-memory, MemVectorDB can scale vertically based on available system resources.
-- Metadata Support: Supports metadata storage, beneficial for RAG (Retrieval Augmented Generation) applications and pipelines.
-- Open Source: MIT Licensed, free forever.
+- **Fast:** MemVectorDB stores vectors in-memory, ensuring fast insertion and retrieval operations.
+- **Vertical Scalability:** With vectors stored in-memory, MemVectorDB can scale vertically based on available system resources.
+- **Metadata Support:** Supports metadata storage, beneficial for RAG (Retrieval Augmented Generation) applications and pipelines.
+- **Option for Persistence:** Supports full restoration of data from logs.
+- **Open Source:** MIT Licensed, free forever.
 
 
 ## 🚀 Usage
@@ -18,12 +19,17 @@ git clone https://github.com/KevKibe/memvectordb.git
 ```bash
 make build
 ```
-3. Start the server
+3. Start the DB.
 ```bash
 make run
 ```
-- Server runs on http://localhost:8000
-
+- DB runs on http://localhost:8000
+- 
+4. Restore the DB from logs.
+```bash
+make run-restore
+```
+- DB runs on http://localhost:8000
 
 ## 🐳 Using Docker
 
