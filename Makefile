@@ -4,6 +4,9 @@ build:
 run: build
 	./target/release/memvectordb
 
+run-restore: build
+	RESTORE_DB=true ./target/release/memvectordb
+
 clean:
 	cargo clean
 
