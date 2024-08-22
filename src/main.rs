@@ -3,6 +3,7 @@ mod similarity;
 mod handlers;
 mod model;
 mod response;
+mod replay_log;
 
 use handlers::{
     health_checker_handler, 
@@ -25,12 +26,18 @@ use crate::model::{
 };
 use std::sync::{Arc, Mutex};
 type WebResult<T> = std::result::Result<T, Rejection>;
+use crate::replay_log::restore_db_from_logs;
+use std::env;
 
 
 #[tokio::main]
 async fn main() {
     // Create a shared CacheDB instance wrapped in Mutex and Arc
     let db = Arc::new(Mutex::new(CacheDB::new()));
+
+    if env::var("RESTORE_DB").is_ok() {
+        let _restored_db = restore_db_from_logs(db.clone());
+    }
 
     let health_checker_route = warp::path!("healthchecker")
         .and(warp::get())
@@ -42,19 +49,19 @@ async fn main() {
     let create_collection_route = warp::path!("create_collection")
         .and(warp::post())
         .and(warp::body::json::<CreateCollectionStruct>())
-        .and(with_db.clone())  
+        .and(with_db.clone())
         .and_then(create_collection_handler);
 
     let insert_embeddings_route = warp::path!("insert_embeddings")
         .and(warp::put())
         .and(warp::body::json::<InsertEmbeddingStruct>())
-        .and(with_db.clone())  
+        .and(with_db.clone())
         .and_then(insert_embeddings_handler);
 
     let get_collection_route = warp::path!("get_collection")
         .and(warp::get())
         .and(warp::body::json::<CollectionHandlerStruct>())
-        .and(with_db.clone())  
+        .and(with_db.clone())
         .and_then(get_collection_handler);
 
     let delete_collection_route = warp::path!("delete_collection")
@@ -95,6 +102,7 @@ async fn main() {
     warp::serve(routes)
         .run(([0, 0, 0, 0], 8000))
         .await;
+
 }
 
 
