@@ -10,22 +10,22 @@ An fast in-memory VectorDB in rust.
 
 
 ## 🚀 Usage
-1. Clone the repository:
+### 1. Clone the repository:
 ```bash
 git clone https://github.com/KevKibe/memvectordb.git
 ```
 
-2. Build dependencies:
+### 2. Build dependencies:
 ```bash
 make build
 ```
-3. Start the DB.
+### 3. Start the DB.
 ```bash
 make run
 ```
 - DB runs on http://localhost:8000
 - 
-4. Restore the DB from logs.
+### 4. Restore the DB from logs.
 ```bash
 make run-restore
 ```
@@ -33,29 +33,55 @@ make run-restore
 
 ## 🐳 Using Docker
 
-1. Pull the Docker image:
+### 1. Pull the Docker image:
 
 - On x86_64 (Intel/AMD) systems:
 
 ```bash
-docker pull kevkibe/memvectordb:v1.8.0
+docker pull kevkibe/memvectordb:v2.0.0
 
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
-docker pull --platform linux/amd64 kevkibe/memvectordb:v1.8.0
+docker pull --platform linux/amd64 kevkibe/memvectordb:v2.0.0
 ```
 
-2. Run the Docker container:
+### 2. Run the Docker container:
 - On x86_64 (Intel/AMD) systems:
 ```bash
-docker run -p 8000:8000 kevkibe/memvectordb:v1.8.0
+docker run -it --rm \
+    -p 8000:8000 \
+    -v /var/memvectordb:/memvectordb \
+    kevkibe/memvectordb:v2.0.0
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
-docker run -p 8000:8000 --platform linux/amd64 kevkibe/memvectordb:v1.8.0
+docker run -it --rm \
+    --platform linux/amd64 \
+    -p 8000:8000 \
+    -v /var/memvectordb:/memvectordb \
+    kevkibe/memvectordb:v2.0.0
 ```
-3. Server runs on http://localhost:8000
+
+### 3. Run the Docker container with DB restoration:
+- On x86_64 (Intel/AMD) systems:
+```bash
+docker run -it --rm \
+    -p 8000:8000 \
+    -v /var/memvectordb:/memvectordb \
+    -e RESTORE_DB=true \
+    kevkibe/memvectordb:v2.0.0
+```
+- On ARM-based systems (e.g., M1, M2, M3):
+```bash
+docker run -it --rm \
+    --platform linux/amd64 \
+    -p 8000:8000 \
+    -v /var/memvectordb:/memvectordb \
+    -e RESTORE_DB=true \
+    kevkibe/memvectordb:v2.0.0
+```
+### 4. DB runs on http://localhost:8000
 
 MemVectorDB Python client: [Docs](https://github.com/KevKibe/memvectordb-python-client/blob/main/README.md)
 
