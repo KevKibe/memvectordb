@@ -13,7 +13,11 @@ RUN cargo build --release --bin memvectordb
 
 FROM debian:bookworm-slim as runtime
 WORKDIR /memvectordb
-COPY --from=builder /memvectordb/target/release/memvectordb /usr/local/bin
+COPY --from=builder /memvectordb/target/release/memvectordb /usr/local/bin/memvectordb
 
 EXPOSE 8000
-ENTRYPOINT ["/usr/local/bin/memvectordb"]
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
