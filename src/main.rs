@@ -87,6 +87,13 @@ async fn main() {
         .and(warp::body::json::<CollectionHandlerStruct>())
         .and(with_db.clone())
         .and_then(get_embeddings_handler);
+
+    // Define CORS
+    let cors = warp::cors()
+        .allow_any_origin() // define URL 
+        .allow_methods(vec!["GET", "POST", "PUT", "DELETE"])
+        .allow_headers(vec!["Content-Type"]);
+
     // Combine the routes
     let routes = health_checker_route
         .or(create_collection_route)
@@ -95,7 +102,8 @@ async fn main() {
         .or(delete_collection_route)
         .or(batch_insert_embeddings_route)
         .or(get_similarity_route)
-        .or(get_embeddings_route);
+        .or(get_embeddings_route)
+        .with(cors);
 
     // Start the server
     println!("🚀 Server started successfully");
