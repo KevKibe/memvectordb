@@ -211,6 +211,9 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use tempfile::NamedTempFile;
     use std::io::Write;
+    use std::fs;
+    use std::io::copy;
+    use std::fs::File;
 
     #[test]
     fn test_restore_db_from_logs() {
@@ -224,7 +227,11 @@ mod tests {
         writeln!(temp_file, "2024-09-10 23:28:48 [INFO] Deleted collection: 'test_collection_1'").unwrap();
         let db = Arc::new(Mutex::new(CacheDB::new()));
 
-        std::fs::rename(temp_file.path(), "output.log").expect("failed to rename temp file");
+        let temp_path = temp_file.path();
+        let mut output_file = File::create("output.log").expect("failed to create output file");
+        let mut temp_file = File::open(temp_path).expect("failed to open temp file");
+        copy(&mut temp_file, &mut output_file).expect("failed to copy temp file to output.log");
+        fs::remove_file(temp_path).expect("failed to remove temp file");
 
         let result = restore_db_from_logs(db.clone());
 
