@@ -25,3 +25,7 @@ regex = "1.10.6"
 [dependencies.uuid]
 version = "1.10.0"
 features = ["v4", "fast-rng", "macro-diagnostics"]
+
+[dev-dependencies]
+tempfile = "3.3"
+mockall = "0.11"
