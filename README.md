@@ -24,7 +24,7 @@ make build
 make run
 ```
 - DB runs on http://localhost:8000
-- 
+
 ### 4. Restore the DB from logs.
 ```bash
 make run-restore
@@ -38,12 +38,12 @@ make run-restore
 - On x86_64 (Intel/AMD) systems:
 
 ```bash
-docker pull kevkibe/memvectordb:v2.0.0
+docker pull kevkibe/memvectordb:v2.1.0
 
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
-docker pull --platform linux/amd64 kevkibe/memvectordb:v2.0.0
+docker pull --platform linux/amd64 kevkibe/memvectordb:v2.1.0
 ```
 
 ### 2. Run the Docker container:
@@ -52,7 +52,7 @@ docker pull --platform linux/amd64 kevkibe/memvectordb:v2.0.0
 docker run -it --rm \
     -p 8000:8000 \
     -v /var/memvectordb:/memvectordb \
-    kevkibe/memvectordb:v2.0.0
+    kevkibe/memvectordb:v2.1.0
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
@@ -60,7 +60,7 @@ docker run -it --rm \
     --platform linux/amd64 \
     -p 8000:8000 \
     -v /var/memvectordb:/memvectordb \
-    kevkibe/memvectordb:v2.0.0
+    kevkibe/memvectordb:v2.1.0
 ```
 
 ### 3. Run the Docker container with DB restoration:
@@ -70,7 +70,7 @@ docker run -it --rm \
     -p 8000:8000 \
     -v /var/memvectordb:/memvectordb \
     -e RESTORE_DB=true \
-    kevkibe/memvectordb:v2.0.0
+    kevkibe/memvectordb:v2.1.0
 ```
 - On ARM-based systems (e.g., M1, M2, M3):
 ```bash
@@ -79,7 +79,7 @@ docker run -it --rm \
     -p 8000:8000 \
     -v /var/memvectordb:/memvectordb \
     -e RESTORE_DB=true \
-    kevkibe/memvectordb:v2.0.0
+    kevkibe/memvectordb:v2.1.0
 ```
 ### 4. DB runs on http://localhost:8000
 
