@@ -204,3 +204,51 @@ pub fn parse_and_delete_collection(log_line: &str, db: Arc<Mutex<CacheDB>>) -> R
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{Arc, Mutex};
+    use tempfile::NamedTempFile;
+    use std::io::Write;
+
+    #[test]
+    fn test_restore_db_from_logs() {
+        let mut temp_file = NamedTempFile::new().expect("failed to create temp file");
+        writeln!(temp_file, "2024-09-10 23:28:48 [INFO] Created new collection with name: 'test_collection', dimension: '3', distance: 'Euclidean'").unwrap();
+        writeln!(temp_file, "2024-09-10 23:28:48 [INFO] Created new collection with name: 'test_collection_1', dimension: '3', distance: 'Euclidean'").unwrap();
+        let log_entry = format!(
+            "2024-09-10 23:28:48 [INFO] Embedding: 'Embedding {{ id: {{\"unique_id\": \"0\"}}, vector: [1.0, 1.0, 1.0], metadata: Some({{\"page\": \"1\", \"text\": \"This is a test metadata text\"}}) }}', successfully inserted into collection 'test_collection'"
+        );
+        writeln!(temp_file, "{}", log_entry).unwrap();
+        writeln!(temp_file, "2024-09-10 23:28:48 [INFO] Deleted collection: 'test_collection_1'").unwrap();
+        let db = Arc::new(Mutex::new(CacheDB::new()));
+
+        std::fs::rename(temp_file.path(), "output.log").expect("failed to rename temp file");
+
+        let result = restore_db_from_logs(db.clone());
+
+        assert!(result.is_ok());
+
+        let mut metadata = HashMap::new();
+        metadata.insert("page".to_string(), "1".to_string());
+        metadata.insert("text".to_string(), "This is a test metadata text".to_string());
+
+        let mut id = HashMap::new();
+        id.insert("unique_id".to_string(), "0".to_string());
+
+        let expected_embedding = Embedding {
+            id,
+            vector: vec![1.0, 1.0, 1.0],
+            metadata: Some(metadata),
+        };
+
+        let db_lock = db.lock().unwrap();
+        let collection = db_lock.collections.get("test_collection").expect("Collection 'test_collection' not found");
+        assert!(db_lock.collections.get("test_collection_1").is_none());
+        assert_eq!(collection.embeddings.len(), 1);
+        assert_eq!(collection.embeddings[0], expected_embedding);
+
+        std::fs::remove_file("output.log").expect("failed to remove temp log file");
+    }
+}
