@@ -27,5 +27,5 @@ version = "1.10.0"
 features = ["v4", "fast-rng", "macro-diagnostics"]
 
 [dev-dependencies]
-tempfile = "3.3"
+tempfile = "3.12"
 mockall = "0.11"
