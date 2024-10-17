@@ -83,7 +83,7 @@ docker run -it --rm \
 ```
 ### 4. DB runs on http://localhost:8000
 
-MemVectorDB Python client: [Docs](https://github.com/KevKibe/memvectordb-python-client/blob/main/README.md)
+MemVectorDB Python client: [Docs](https://github.com/KevKibe/memvectordb-python-sdk)
 
 ## Load Tests
 - All tests done with 100000 requests on a Macbook Air M1.
